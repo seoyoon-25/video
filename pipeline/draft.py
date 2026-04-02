@@ -31,13 +31,38 @@ def _call_claude(prompt: str) -> str:
         return call_claude_cli(prompt)
 
 
-def generate_draft(news: str, channel_context: str = "") -> dict:
-    """Research topic + generate draft via Claude."""
+def generate_draft(
+    news: str,
+    channel_context: str = "",
+    niche: str = "general",
+    platform: str = "shorts",
+) -> dict:
+    """Research topic + generate draft via Claude.
+
+    Args:
+        news: Topic or news headline to base the script on.
+        channel_context: Optional channel context (tone, audience, etc.).
+        niche: Content niche (e.g. "gaming", "finance", "fitness"). Adjusts tone.
+        platform: Target platform ("shorts", "reels", "tiktok", "all"). Affects script length.
+    """
+    from .config import PLATFORM_CONFIGS
+
     research = research_topic(news)
 
     channel_note = f"\nChannel context: {channel_context}" if channel_context else ""
 
-    prompt = f"""You are writing a YouTube Short script (60-90 seconds spoken, ~150-180 words).{channel_note}
+    # One-line niche context — keeps prompt simple and generic
+    niche_note = ""
+    if niche and niche != "general":
+        niche_note = f"\nNiche: {niche} — keep tone and examples relevant to this audience."
+
+    # Platform-specific script length hint (scaffold: all platforms share 9:16 dimensions)
+    platform_key = platform if platform != "all" else "shorts"
+    platform_cfg = PLATFORM_CONFIGS.get(platform_key, PLATFORM_CONFIGS["shorts"])
+    max_words = platform_cfg["max_script_words"]
+    platform_label = platform_cfg["label"]
+
+    prompt = f"""You are writing a {platform_label} script ({max_words} words max, ~60-90 seconds spoken).{channel_note}{niche_note}
 
 NEWS/TOPIC: {news}
 
@@ -88,5 +113,7 @@ Output JSON exactly:
             draft["broll_prompts"] = [str(p) for p in draft["broll_prompts"][:3]]
 
     draft["news"] = news
+    draft["niche"] = niche
+    draft["platform"] = platform
     draft["research"] = research
     return draft

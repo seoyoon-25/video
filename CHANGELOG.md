@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.0.0] — 2026-04-02
+
+### Added
+- **Niche support** — `--niche` flag on `draft` and `run` commands. Injects a one-line niche context into the Claude prompt (e.g. `Niche: fitness — keep tone and examples relevant to this audience.`). Supported niches: gaming, finance, fitness, tech, food, travel, general.
+- **NewsAPI source** — `pipeline/topics/newsapi.py` (`NewsAPISource`). Fetches top headlines via the NewsAPI REST API. Silently skipped when `NEWSAPI_KEY` is absent. API key sent via `X-Api-Key` header (not URL param). Rank-based trending score (1.0 → 0.3 decay).
+- **Multi-platform scaffold** — `--platform` flag with choices `shorts`, `reels`, `tiktok`, `all`. Platform-specific script length hints via `PLATFORM_CONFIGS` in `config.py`. All platforms share 9:16 portrait for now; expand `PLATFORM_CONFIGS` to diverge per platform.
+- **`PLATFORM_CONFIGS`** dict in `config.py` — label + `max_script_words` per platform.
+- **`NICHE_TO_SUBREDDITS`** dict in `config.py` — niche → default subreddit list for topic discovery.
+- **`get_newsapi_key()`** helper in `config.py` — resolves `NEWSAPI_KEY` from env then config.json.
+- `NEWSAPI_KEY` documented in README configuration table.
+
+### Changed
+- `generate_draft()` signature: added `niche` and `platform` parameters (both default to safe values).
+- `draft` output JSON now includes `niche` and `platform` fields for downstream use.
+- README: bumped to v3.0.0, added Niche Examples table, added NewsAPI to topic sources table, added autopilot CTA footer.
+
 ## [2.1.0] — 2026-02-27
 
 Security audit fixes ported to v2 modular architecture.

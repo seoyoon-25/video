@@ -1,9 +1,17 @@
-# YouTube Shorts Pipeline v2
+# YouTube Shorts Pipeline v3
 
-**v2.1.0** — [Changelog](CHANGELOG.md)
+**v3.0.0** — [Changelog](CHANGELOG.md)
 
 > Turn a one-line topic into a published YouTube Short in minutes.
 > Fully automated: **research -> script -> AI visuals -> voiceover -> captions -> music -> upload.**
+
+---
+
+## What's New in v3
+
+- **Niche support** — `--niche` flag tailors Claude's tone and vocabulary to your audience
+- **NewsAPI source** — optional top-headlines topic discovery (set `NEWSAPI_KEY`)
+- **Multi-platform scaffold** — `--platform` option (shorts, reels, tiktok, all)
 
 ---
 
@@ -57,6 +65,7 @@ python scripts/setup_youtube_oauth.py
 ### Draft — generate script and metadata
 ```bash
 python -m pipeline draft --news "your topic"
+python -m pipeline draft --news "your topic" --niche fitness
 python -m pipeline draft --discover              # use topic engine
 python -m pipeline draft --discover --auto-pick   # let Claude pick
 ```
@@ -75,6 +84,7 @@ python -m pipeline upload --draft ~/.youtube-shorts-pipeline/drafts/<id>.json
 ### Full pipeline
 ```bash
 python -m pipeline run --news "your topic"
+python -m pipeline run --news "your topic" --niche tech --platform shorts
 python -m pipeline run --discover --auto-pick     # trending topic, auto-selected
 ```
 
@@ -85,11 +95,26 @@ python -m pipeline topics --limit 20
 ```
 
 ### Options
+- `--niche NICHE` — content niche: `gaming`, `finance`, `fitness`, `tech`, `food`, `travel`, `general`
+- `--platform PLATFORM` — target platform: `shorts`, `reels`, `tiktok`, `all`
 - `--lang en|hi` — language for voiceover + captions
 - `--verbose` — debug logging
 - `--force` — redo completed stages
 - `--dry-run` — draft only, skip produce/upload
 - `--context "..."` — channel context for script generation
+
+---
+
+## Niche Examples
+
+| Niche | Example topic | Tone |
+|-------|--------------|------|
+| `gaming` | "Best budget GPU 2025" | Hype, shorthand, community slang |
+| `finance` | "S&P 500 hits all-time high" | Clear, measured, data-driven |
+| `fitness` | "5-minute morning routine" | Motivational, actionable |
+| `tech` | "OpenAI releases new model" | Curious, accessible, forward-looking |
+| `food` | "Viral TikTok pasta recipe" | Warm, sensory, inviting |
+| `travel` | "Hidden gems in Japan" | Wanderlust, vivid, inspirational |
 
 ---
 
@@ -100,6 +125,7 @@ python -m pipeline topics --limit 20
 | Reddit | `.json` API (hot/trending) | None |
 | RSS | `feedparser` (any feed URL) | None |
 | Google Trends | `pytrends` library | None |
+| NewsAPI | Top headlines REST API | `NEWSAPI_KEY` |
 | Twitter/X | Public trends API | Optional |
 | TikTok | Apify actor | Optional |
 
@@ -109,7 +135,8 @@ Configure in `~/.youtube-shorts-pipeline/config.json`:
   "topic_sources": {
     "reddit": {"enabled": true, "subreddits": ["technology", "worldnews"]},
     "rss": {"enabled": true, "feeds": ["https://hnrss.org/frontpage"]},
-    "google_trends": {"enabled": true, "geo": "IN"}
+    "google_trends": {"enabled": true, "geo": "IN"},
+    "newsapi": {"enabled": true, "country": "us", "category": "general"}
   }
 }
 ```
@@ -127,6 +154,7 @@ Keys in `~/.youtube-shorts-pipeline/config.json` (0600 permissions):
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs TTS (fallback: macOS `say`) |
 | `VOICE_ID_EN` | Optional | ElevenLabs voice ID for English |
 | `VOICE_ID_HI` | Optional | ElevenLabs voice ID for Hindi |
+| `NEWSAPI_KEY` | Optional | NewsAPI key for top-headlines source |
 
 Environment variables take priority over the config file.
 
@@ -157,6 +185,7 @@ youtube-shorts-pipeline/
 │       ├── base.py, engine.py
 │       ├── reddit.py, rss.py
 │       ├── google_trends.py
+│       ├── newsapi.py
 │       ├── twitter.py, tiktok.py
 │       └── manual.py
 ├── tests/                     # 78 tests
@@ -214,3 +243,8 @@ This pipeline handles API keys and OAuth tokens. The following measures are in p
 ## Licence
 
 MIT
+
+---
+
+### Want this on autopilot?
+Running this manually is great. Having it run automatically, calibrated to your channel voice, posting on schedule — that's [aarees.com](https://aarees.com).

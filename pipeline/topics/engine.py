@@ -32,6 +32,12 @@ class TopicEngine:
 
         # Optional sources
         try:
+            from .newsapi import NewsAPISource
+            source_map["newsapi"] = NewsAPISource
+        except ImportError:
+            pass
+
+        try:
             from .twitter import TwitterSource
             source_map["twitter"] = TwitterSource
         except ImportError:

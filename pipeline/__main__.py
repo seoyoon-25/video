@@ -17,8 +17,10 @@ def cmd_draft(args):
     DRAFTS_DIR.mkdir(parents=True, exist_ok=True)
     job_id = str(int(time.time()))
 
-    print(f"\n  Drafting: {args.news}\n")
-    draft = generate_draft(args.news, getattr(args, "context", ""))
+    niche = getattr(args, "niche", "general") or "general"
+    platform = getattr(args, "platform", "shorts") or "shorts"
+    print(f"\n  Drafting: {args.news} [niche: {niche}, platform: {platform}]\n")
+    draft = generate_draft(args.news, getattr(args, "context", ""), niche=niche, platform=platform)
     draft["job_id"] = job_id
 
     out_path = DRAFTS_DIR / f"{job_id}.json"
@@ -213,7 +215,8 @@ def cmd_run(args):
 def cmd_topics(args):
     from .topics import TopicEngine
 
-    engine = TopicEngine()
+    niche = getattr(args, "niche", "general") or "general"
+    engine = TopicEngine(niche=niche)
     candidates = engine.discover(limit=getattr(args, "limit", 15))
 
     if not candidates:
@@ -234,7 +237,7 @@ def main():
         run_setup()
 
     parser = argparse.ArgumentParser(
-        description="YouTube Shorts Pipeline v2 — AI-Native Content Engine",
+        description="YouTube Shorts Pipeline v3 — AI-Native Content Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
@@ -244,6 +247,8 @@ def main():
     p_draft = sub.add_parser("draft", help="Generate script + metadata")
     p_draft.add_argument("--news", required=False, help="Topic/news headline")
     p_draft.add_argument("--context", default="", help="Channel context")
+    p_draft.add_argument("--niche", default="general", help="Content niche (gaming, finance, fitness, tech, food, travel, general)")
+    p_draft.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"], help="Target platform")
     p_draft.add_argument("--discover", action="store_true", help="Use topic engine instead of --news")
     p_draft.add_argument("--auto-pick", action="store_true", help="Let Claude pick the best topic")
     p_draft.add_argument("--dry-run", action="store_true", help="Draft only, skip produce")
@@ -267,6 +272,8 @@ def main():
     p_run.add_argument("--lang", default="en", choices=["en", "hi"])
     p_run.add_argument("--dry-run", action="store_true")
     p_run.add_argument("--context", default="")
+    p_run.add_argument("--niche", default="general", help="Content niche (gaming, finance, fitness, tech, food, travel, general)")
+    p_run.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"], help="Target platform")
     p_run.add_argument("--discover", action="store_true")
     p_run.add_argument("--auto-pick", action="store_true")
 
