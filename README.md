@@ -379,11 +379,26 @@ All security measures from v2 carry forward, plus:
 **v3.2** (planned)
   Analytics integration (which Shorts performed best), niche profile auto tuning based on performance data, series support (multi episode narrative arcs)
 
-## From the Same Team
+## Built By
 
-This pipeline is built by the team behind [Global Esports](https://globalesports.in) (South Asia's only VCT Pacific franchise) and [thumbnail.gg](https://thumbnail.gg) (AI thumbnail generation with deep niche intelligence).
+**[Dr Rushindra Sinha](https://github.com/rushindrasinha)** — MD, Stanford GSB, Full Stack Developer.
 
-**Want the premium version?** [verticals.gg](https://verticals.gg) offers multi variant script generation, CTR optimized thumbnails, competitive intelligence, and a managed hosted experience with no setup required.
+Built the first game server at 17 (went #1 globally, acquired before finishing med school). Co-founded [Global Esports](https://globalesports.in) — South Asia's only Valorant Champions Tour Pacific franchise. Now building AI tools for creators and operators at [aarees.com](https://aarees.com).
+
+Follow: [@irushi](https://twitter.com/irushi) on X · [@rushindrasinha](https://instagram.com/rushindrasinha) on Instagram
+
+---
+
+## More From This Stack
+
+| Product | What it does |
+|---------|-------------|
+| [**verticals.gg**](https://verticals.gg) | Hosted version of this pipeline — no setup, no terminal, just results |
+| [**thumbnail.gg**](https://thumbnail.gg) | AI thumbnail generation with deep niche intelligence and CTR optimization |
+| [**aarees.com**](https://aarees.com) | The AI agent platform powering both products |
+| [**Global Esports**](https://globalesports.in) | South Asia's VCT Pacific franchise — where the esports niche profile was battle-tested |
+
+---
 
 ## License
 
