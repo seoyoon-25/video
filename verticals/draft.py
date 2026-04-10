@@ -14,12 +14,26 @@ from .niche import load_niche, get_script_context, get_visual_context, get_visua
 from .research import research_topic
 
 
+LANG_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+    "es": "Spanish",
+    "pt": "Portuguese",
+    "de": "German",
+    "fr": "French",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "zh": "Chinese (Simplified)",
+}
+
+
 def generate_draft(
     news: str,
     channel_context: str = "",
     niche: str = "general",
     platform: str = "shorts",
     provider: str | None = None,
+    lang: str = "en",
 ) -> dict:
     """Research topic + generate niche-aware draft via LLM.
 
@@ -29,6 +43,7 @@ def generate_draft(
         niche: Niche profile name (loads from niches/<n>.yaml).
         platform: Target platform (shorts, reels, tiktok).
         provider: LLM provider (claude, gemini, openai, ollama).
+        lang: Output language code (en, zh, ko, ja, etc.).
     """
     # Load niche intelligence
     profile = load_niche(niche)
@@ -80,12 +95,16 @@ def generate_draft(
 
     channel_note = f"\nChannel context: {channel_context}" if channel_context else ""
 
+    # 언어 지시
+    lang_name = LANG_NAMES.get(lang, "English")
+    lang_instruction = f"\n\nIMPORTANT: Write ALL content (script, title, description, captions, tags) in {lang_name}. Do NOT use any other language."
+
     # 롱폼 vs 숏폼 프롬프트 분기
     if is_longform:
         num_chapters = max(3, duration_min // 5)  # 5분당 1챕터
         broll_per_chapter = 5 if duration_min >= 15 else 3
 
-        prompt = f"""You are writing a {platform_label} YouTube video script ({max_words} words, ~{duration_min} minutes).{channel_note}
+        prompt = f"""You are writing a {platform_label} YouTube video script ({max_words} words, ~{duration_min} minutes).{channel_note}{lang_instruction}
 
 {script_context}
 
@@ -106,6 +125,7 @@ RULES:
 - B-roll prompts must follow the visual guidance (style, mood, preferred subjects)
 - Generate {broll_per_chapter} b-roll prompts PER chapter (total {broll_per_chapter * num_chapters + 2} prompts)
 - YouTube description should include chapter timestamps (e.g., 0:00 Intro, 1:30 Chapter 1, etc.)
+- CRITICAL: Output valid JSON only. Escape special characters in strings (use \\n for newlines, \\" for quotes).
 
 Output JSON exactly:
 {{
@@ -122,7 +142,7 @@ Output JSON exactly:
   "thumbnail_prompt": "..."
 }}"""
     else:
-        prompt = f"""You are writing a {platform_label} script ({max_words} words max, ~60-90 seconds spoken).{channel_note}
+        prompt = f"""You are writing a {platform_label} script ({max_words} words max, ~60-90 seconds spoken).{channel_note}{lang_instruction}
 
 {script_context}
 
@@ -142,6 +162,7 @@ RULES:
 - Use one of the CTA OPTIONS at the end
 - Never use any of the NEVER USE phrases
 - B-roll prompts must follow the visual guidance (style, mood, preferred subjects)
+- CRITICAL: Output valid JSON only. Escape special characters in strings (use \\n for newlines, \\" for quotes).
 
 Output JSON exactly:
 {{
@@ -155,7 +176,7 @@ Output JSON exactly:
   "thumbnail_prompt": "..."
 }}"""
 
-    raw = call_llm(prompt, provider=provider)
+    raw = call_llm(prompt, provider=provider, max_tokens=4000)
 
     # Parse JSON from response
     if raw.startswith("```"):
@@ -170,7 +191,48 @@ Output JSON exactly:
     if start >= 0 and end > start:
         raw = raw[start:end]
 
-    draft = json.loads(raw)
+    # JSON 파싱 시도 (실패 시 문자열 정리 후 재시도)
+    try:
+        draft = json.loads(raw)
+    except json.JSONDecodeError as e:
+        log(f"JSON parse error: {e}. Attempting to fix...")
+        # 문자열 내부의 이스케이프되지 않은 줄바꿈/탭 수정
+        import re
+        # JSON 문자열 값 내부의 실제 줄바꿈을 \\n으로 변환
+        def fix_newlines_in_strings(s):
+            result = []
+            in_string = False
+            escape_next = False
+            for char in s:
+                if escape_next:
+                    result.append(char)
+                    escape_next = False
+                    continue
+                if char == '\\':
+                    result.append(char)
+                    escape_next = True
+                    continue
+                if char == '"':
+                    in_string = not in_string
+                    result.append(char)
+                    continue
+                if in_string and char == '\n':
+                    result.append('\\n')
+                elif in_string and char == '\t':
+                    result.append('\\t')
+                elif in_string and char == '\r':
+                    result.append('\\r')
+                else:
+                    result.append(char)
+            return ''.join(result)
+
+        fixed = fix_newlines_in_strings(raw)
+        try:
+            draft = json.loads(fixed)
+        except json.JSONDecodeError as e2:
+            log(f"JSON parse still failed: {e2}")
+            log(f"Raw response (first 500 chars): {raw[:500]}")
+            raise ValueError(f"LLM returned invalid JSON: {e2}")
 
     # Validate and sanitize LLM output fields
     expected_str_fields = [
@@ -201,6 +263,7 @@ Output JSON exactly:
     draft["research"] = research
     draft["niche"] = niche
     draft["platform"] = platform
+    draft["lang"] = lang
     draft["is_longform"] = is_longform
     draft["duration_min"] = duration_min
     draft["video_width"] = platform_cfg.get("width", 1080)

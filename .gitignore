@@ -13,6 +13,10 @@ drafts/
 media/
 logs/
 
+# Node.js
+node_modules/
+package-lock.json
+
 # Python
 __pycache__/
 *.pyc

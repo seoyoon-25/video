@@ -21,14 +21,16 @@ def cmd_draft(args):
     niche = getattr(args, "niche", "general") or "general"
     platform = getattr(args, "platform", "shorts") or "shorts"
     provider = getattr(args, "provider", None)
+    lang = getattr(args, "lang", "en") or "en"
 
-    print(f"\n  Drafting: {args.news} [niche: {niche}, platform: {platform}]\n")
+    print(f"\n  Drafting: {args.news} [niche: {niche}, platform: {platform}, lang: {lang}]\n")
     draft = generate_draft(
         args.news,
         getattr(args, "context", ""),
         niche=niche,
         platform=platform,
         provider=provider,
+        lang=lang,
     )
     draft["job_id"] = job_id
 
@@ -302,6 +304,7 @@ def main():
     p_draft.add_argument("--context", default="", help="Channel context")
     p_draft.add_argument("--niche", default="general", help=niche_help)
     p_draft.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
+    p_draft.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"])
     p_draft.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
     p_draft.add_argument("--discover", action="store_true", help="Use topic engine")
     p_draft.add_argument("--auto-pick", action="store_true", help="Let LLM pick the best topic")
@@ -310,7 +313,7 @@ def main():
     # produce
     p_produce = sub.add_parser("produce", help="Generate video from draft")
     p_produce.add_argument("--draft", required=True)
-    p_produce.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
+    p_produce.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"])
     p_produce.add_argument("--voice", default=None, help="TTS: edge, elevenlabs, say")
     p_produce.add_argument("--script", default=None, help="Override script text")
     p_produce.add_argument("--force", action="store_true", help="Redo all stages")
@@ -318,7 +321,7 @@ def main():
     # upload
     p_upload = sub.add_parser("upload", help="Upload to YouTube")
     p_upload.add_argument("--draft", required=True)
-    p_upload.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
+    p_upload.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"])
     p_upload.add_argument("--force", action="store_true", help="Re-upload even if done")
 
     # run (full pipeline)
@@ -328,7 +331,7 @@ def main():
     p_run.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
     p_run.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
     p_run.add_argument("--voice", default=None, help="TTS: edge, elevenlabs, say")
-    p_run.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
+    p_run.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"])
     p_run.add_argument("--dry-run", action="store_true")
     p_run.add_argument("--context", default="")
     p_run.add_argument("--discover", action="store_true")
