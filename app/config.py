@@ -45,13 +45,7 @@ class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "Strict"
-
-    @property
-    def SECRET_KEY(self):
-        key = os.environ.get("SECRET_KEY")
-        if not key:
-            raise RuntimeError("프로덕션 환경에서는 SECRET_KEY 환경변수가 필수입니다.")
-        return key
+    # SECRET_KEY 검증은 create_app()에서 수행
 
 
 config = {

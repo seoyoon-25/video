@@ -16,6 +16,11 @@ def create_app(config_name: str = None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config.get(config_name, config["default"]))
 
+    # 프로덕션 환경에서 SECRET_KEY 필수 검증
+    if config_name == "production":
+        if not os.environ.get("SECRET_KEY"):
+            raise RuntimeError("프로덕션 환경에서는 SECRET_KEY 환경변수가 필수입니다.")
+
     # CSRF 보호 초기화
     from flask_wtf.csrf import CSRFProtect
     csrf = CSRFProtect(app)

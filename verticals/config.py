@@ -109,12 +109,18 @@ NICHE_TO_SUBREDDITS: dict[str, list[str]] = {
 
 # ─────────────────────────────────────────────────────
 # Platform scaffold — dimensions + script length hints
-# All platforms share 9:16 portrait for now; expand here in future.
+# Shorts: 9:16 portrait, Longform: 16:9 landscape
 # ─────────────────────────────────────────────────────
 PLATFORM_CONFIGS: dict[str, dict] = {
-    "shorts": {"width": 1080, "height": 1920, "max_script_words": 180, "label": "YouTube Shorts"},
-    "reels":  {"width": 1080, "height": 1920, "max_script_words": 150, "label": "Instagram Reels"},
-    "tiktok": {"width": 1080, "height": 1920, "max_script_words": 150, "label": "TikTok"},
+    # 숏폼 (60초 이하)
+    "shorts": {"width": 1080, "height": 1920, "max_script_words": 180, "label": "YouTube Shorts", "type": "short"},
+    "reels":  {"width": 1080, "height": 1920, "max_script_words": 150, "label": "Instagram Reels", "type": "short"},
+    "tiktok": {"width": 1080, "height": 1920, "max_script_words": 150, "label": "TikTok", "type": "short"},
+    # 롱폼 (5분 ~ 30분)
+    "youtube_5min":  {"width": 1920, "height": 1080, "max_script_words": 750, "label": "YouTube 5분", "type": "long", "duration_min": 5},
+    "youtube_10min": {"width": 1920, "height": 1080, "max_script_words": 1500, "label": "YouTube 10분", "type": "long", "duration_min": 10},
+    "youtube_15min": {"width": 1920, "height": 1080, "max_script_words": 2250, "label": "YouTube 15분", "type": "long", "duration_min": 15},
+    "youtube_25min": {"width": 1920, "height": 1080, "max_script_words": 3750, "label": "YouTube 25분", "type": "long", "duration_min": 25},
 }
 
 
