@@ -1,0 +1,908 @@
+{% extends "base.html" %}
+
+{% block title %}비디오 생성{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 헤더 -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">비디오 생성</h1>
+        <p class="mt-2 text-slate-400">토픽을 입력하고 설정을 선택한 후 생성 버튼을 누르세요</p>
+    </div>
+
+    <!-- 사용량 표시 -->
+    <div class="mb-8 bg-dark-800 rounded-xl p-4 border border-dark-700 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary-500/10 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm text-slate-400">오늘 남은 생성 횟수</p>
+                <p class="text-lg font-semibold text-white">
+                    <span id="remaining-count">{{ remaining }}</span> / {{ daily_limit }}
+                </p>
+            </div>
+        </div>
+        {% if not can_generate %}
+            <span class="px-3 py-1 bg-red-500/10 text-red-400 text-sm rounded-full">일일 한도 초과</span>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- 왼쪽: 입력 폼 -->
+        <div class="lg:col-span-1 space-y-6">
+            <form id="generate-form" class="space-y-6">
+                <!-- 토픽 입력 -->
+                <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+                    <label for="topic" class="block text-sm font-medium text-slate-300 mb-3">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                            토픽 / 주제
+                        </span>
+                    </label>
+                    <textarea id="topic" name="topic" rows="3" required
+                        class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition resize-none"
+                        placeholder="예: AI가 바꾸는 미래 일자리&#10;예: 비트코인 반감기가 가격에 미치는 영향"></textarea>
+                </div>
+
+                <!-- 니치 선택 -->
+                <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+                    <label class="block text-sm font-medium text-slate-300 mb-3">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                            콘텐츠 니치
+                        </span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2">
+                        {% for niche in niches %}
+                            <label class="niche-card relative cursor-pointer">
+                                <input type="radio" name="niche" value="{{ niche.id }}"
+                                       class="sr-only peer" {% if niche.id == 'general' %}checked{% endif %}>
+                                <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl transition
+                                            peer-checked:border-primary-500 peer-checked:bg-primary-500/10
+                                            hover:border-dark-500">
+                                    <p class="font-medium text-white text-sm">{{ niche.name }}</p>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 플랫폼 선택 -->
+                <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+                    <label class="block text-sm font-medium text-slate-300 mb-3">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            플랫폼 & 길이
+                        </span>
+                    </label>
+
+                    <!-- 숏폼/롱폼 탭 -->
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" id="tab-short" class="format-tab flex-1 py-2 px-4 rounded-lg bg-primary-500 text-white font-medium text-sm transition">
+                            숏폼 (60초)
+                        </button>
+                        <button type="button" id="tab-long" class="format-tab flex-1 py-2 px-4 rounded-lg bg-dark-700 text-slate-300 font-medium text-sm transition hover:bg-dark-600">
+                            롱폼 (5~25분)
+                        </button>
+                    </div>
+
+                    <!-- 숏폼 플랫폼 -->
+                    <div id="short-platforms" class="flex gap-3">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="platform" value="shorts" class="sr-only peer" checked>
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-red-500 peer-checked:bg-red-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">YouTube</span>
+                                <p class="text-xs text-slate-500 mt-1">9:16</p>
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="platform" value="tiktok" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-pink-500 peer-checked:bg-pink-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">TikTok</span>
+                                <p class="text-xs text-slate-500 mt-1">9:16</p>
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="platform" value="reels" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-purple-500 peer-checked:bg-purple-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">Reels</span>
+                                <p class="text-xs text-slate-500 mt-1">9:16</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- 롱폼 플랫폼 -->
+                    <div id="long-platforms" class="hidden grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="platform" value="youtube_5min" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-red-500 peer-checked:bg-red-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">5분</span>
+                                <p class="text-xs text-slate-500 mt-1">16:9 · ~750단어</p>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="platform" value="youtube_10min" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-red-500 peer-checked:bg-red-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">10분</span>
+                                <p class="text-xs text-slate-500 mt-1">16:9 · ~1500단어</p>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="platform" value="youtube_15min" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-red-500 peer-checked:bg-red-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">15분</span>
+                                <p class="text-xs text-slate-500 mt-1">16:9 · ~2250단어</p>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="platform" value="youtube_25min" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-red-500 peer-checked:bg-red-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">25분</span>
+                                <p class="text-xs text-slate-500 mt-1">16:9 · ~3750단어</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- 롱폼 안내 -->
+                    <div id="longform-notice" class="hidden mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p class="text-yellow-300 text-xs">
+                            롱폼은 AI가 챕터별로 스크립트를 작성하며, 더 많은 B-Roll 이미지를 생성합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 생성 모드 선택 -->
+                <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+                    <label class="block text-sm font-medium text-slate-300 mb-3">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            생성 모드
+                        </span>
+                    </label>
+                    <div class="flex gap-3">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="gen_mode" value="auto" class="sr-only peer" checked>
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-primary-500 peer-checked:bg-primary-500/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">자동 완성</span>
+                                <p class="text-xs text-slate-500 mt-1">한 번에 전체 생성</p>
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="gen_mode" value="step" class="sr-only peer">
+                            <div class="p-3 bg-dark-700 border border-dark-600 rounded-xl text-center transition
+                                        peer-checked:border-accent peer-checked:bg-accent/10 hover:border-dark-500">
+                                <span class="text-white font-medium text-sm">단계별 진행</span>
+                                <p class="text-xs text-slate-500 mt-1">스크립트 검토 후 진행</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 음성 선택 -->
+                <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+                    <label class="block text-sm font-medium text-slate-300 mb-3">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                            AI 음성
+                        </span>
+                    </label>
+
+                    <!-- 언어 필터 -->
+                    <div class="flex gap-2 mb-3 flex-wrap">
+                        <button type="button" data-lang="" class="lang-filter px-3 py-1 text-sm rounded-full bg-primary-500 text-white">전체</button>
+                        <button type="button" data-lang="ko" class="lang-filter px-3 py-1 text-sm rounded-full bg-dark-700 text-slate-300 hover:bg-dark-600">한국어</button>
+                        <button type="button" data-lang="en" class="lang-filter px-3 py-1 text-sm rounded-full bg-dark-700 text-slate-300 hover:bg-dark-600">English</button>
+                        <button type="button" data-lang="ja" class="lang-filter px-3 py-1 text-sm rounded-full bg-dark-700 text-slate-300 hover:bg-dark-600">日本語</button>
+                    </div>
+
+                    <!-- 음성 목록 -->
+                    <div id="voice-list" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+                        {% for voice in voices %}
+                            <label class="voice-card block cursor-pointer" data-lang="{{ voice.lang }}">
+                                <input type="radio" name="voice_id" value="{{ voice.id }}"
+                                       class="sr-only peer" {% if loop.first %}checked{% endif %}>
+                                <div class="flex items-center justify-between p-3 bg-dark-700 border border-dark-600 rounded-xl transition
+                                            peer-checked:border-green-500 peer-checked:bg-green-500/10 hover:border-dark-500">
+                                    <div>
+                                        <p class="font-medium text-white text-sm">{{ voice.name }}</p>
+                                        <p class="text-xs text-slate-500">{{ voice.lang }} · {{ voice.gender }}</p>
+                                    </div>
+                                    <button type="button" class="preview-btn p-2 bg-dark-600 hover:bg-dark-500 rounded-lg transition"
+                                            data-voice-id="{{ voice.id }}">
+                                        <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 생성 버튼 -->
+                <button type="submit" id="generate-btn"
+                        class="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        {% if not can_generate %}disabled{% endif %}>
+                    <span class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        비디오 생성하기
+                    </span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 오른쪽: 진행 상황 & 결과 -->
+        <div class="lg:col-span-2">
+            <!-- 초기 상태 -->
+            <div id="initial-state" class="bg-dark-800 rounded-2xl p-12 border border-dark-700 text-center">
+                <div class="w-20 h-20 bg-dark-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">비디오를 생성해보세요</h3>
+                <p class="text-slate-400">왼쪽에서 토픽과 설정을 입력하고 생성 버튼을 누르면<br>AI가 자동으로 비디오를 만들어 드립니다</p>
+            </div>
+
+            <!-- 진행 상태 -->
+            <div id="progress-state" class="hidden bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="spinner"></div>
+                    <h3 class="text-xl font-semibold text-white">비디오 생성 중...</h3>
+                </div>
+
+                <!-- 스텝 인디케이터 -->
+                <div class="space-y-4">
+                    <div class="step-item" data-step="script">
+                        <div class="flex items-center gap-4">
+                            <div class="step-icon w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-slate-300">스크립트 작성</p>
+                                <div class="mt-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                                    <div class="step-progress h-full bg-primary-500 rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-item" data-step="images">
+                        <div class="flex items-center gap-4">
+                            <div class="step-icon w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-slate-300">이미지 생성</p>
+                                <div class="mt-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                                    <div class="step-progress h-full bg-accent rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-item" data-step="voice">
+                        <div class="flex items-center gap-4">
+                            <div class="step-icon w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-slate-300">음성 생성</p>
+                                <div class="mt-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                                    <div class="step-progress h-full bg-green-500 rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-item" data-step="captions">
+                        <div class="flex items-center gap-4">
+                            <div class="step-icon w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-slate-300">자막 생성</p>
+                                <div class="mt-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                                    <div class="step-progress h-full bg-yellow-500 rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-item" data-step="assembly">
+                        <div class="flex items-center gap-4">
+                            <div class="step-icon w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-slate-300">영상 조립</p>
+                                <div class="mt-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                                    <div class="step-progress h-full bg-pink-500 rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 실시간 로그 -->
+                <div class="mt-8">
+                    <p class="text-sm text-slate-400 mb-2">실시간 로그</p>
+                    <div id="log-panel" class="h-32 bg-dark-900 rounded-lg p-4 overflow-y-auto font-mono text-sm text-slate-400">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 완료 상태 -->
+            <div id="complete-state" class="hidden bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white">비디오 생성 완료!</h3>
+                </div>
+
+                <!-- 비디오 프리뷰 -->
+                <div id="video-preview-container" class="aspect-[9/16] max-w-xs mx-auto bg-dark-900 rounded-xl overflow-hidden mb-6">
+                    <video id="video-preview" class="w-full h-full object-cover" controls>
+                    </video>
+                </div>
+
+                <!-- 메타데이터 -->
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <p class="text-sm text-slate-400 mb-1">제목</p>
+                        <p id="video-title" class="text-white font-medium"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400 mb-1">설명</p>
+                        <p id="video-description" class="text-slate-300 text-sm"></p>
+                    </div>
+                </div>
+
+                <!-- 액션 버튼 -->
+                <div class="flex gap-3">
+                    <a id="download-btn" href="#"
+                       class="flex-1 py-3 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-xl text-center transition">
+                        다운로드
+                    </a>
+                    <button id="new-video-btn"
+                            class="flex-1 py-3 bg-dark-700 hover:bg-dark-600 text-white font-medium rounded-xl transition">
+                        새 비디오 만들기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 에러 상태 -->
+            <div id="error-state" class="hidden bg-dark-800 rounded-2xl p-8 border border-red-500/50">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white">오류 발생</h3>
+                </div>
+                <p id="error-message" class="text-red-300 mb-6"></p>
+                <button id="retry-btn"
+                        class="py-3 px-6 bg-dark-700 hover:bg-dark-600 text-white font-medium rounded-xl transition">
+                    다시 시도
+                </button>
+            </div>
+
+            <!-- 스크립트 편집 상태 (단계별 진행 모드) -->
+            <div id="edit-state" class="hidden bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-white">스크립트 검토</h3>
+                            <p class="text-sm text-slate-400">내용을 검토하고 필요시 수정하세요</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full">검토 대기</span>
+                </div>
+
+                <!-- YouTube 제목 -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">YouTube 제목</label>
+                    <input type="text" id="edit-title"
+                           class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent">
+                </div>
+
+                <!-- 스크립트 -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">스크립트</label>
+                    <textarea id="edit-script" rows="8"
+                              class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none font-mono text-sm"></textarea>
+                </div>
+
+                <!-- B-Roll 프롬프트 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        B-Roll 이미지 프롬프트
+                        <span class="text-xs text-slate-500 ml-2">(한 줄에 하나씩)</span>
+                    </label>
+                    <textarea id="edit-broll" rows="6"
+                              class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none font-mono text-sm"></textarea>
+                </div>
+
+                <!-- YouTube 설명 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">YouTube 설명</label>
+                    <textarea id="edit-description" rows="4"
+                              class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none text-sm"></textarea>
+                </div>
+
+                <!-- 액션 버튼 -->
+                <div class="flex gap-3">
+                    <button id="save-draft-btn"
+                            class="flex-1 py-3 bg-dark-700 hover:bg-dark-600 text-white font-medium rounded-xl transition">
+                        임시 저장
+                    </button>
+                    <button id="continue-btn"
+                            class="flex-1 py-3 bg-gradient-to-r from-accent to-cyan-400 hover:from-cyan-400 hover:to-accent text-dark-900 font-semibold rounded-xl shadow-lg shadow-accent/25 transition">
+                        이미지 생성 시작
+                    </button>
+                </div>
+            </div>
+
+            <!-- 스크립트 생성 중 상태 -->
+            <div id="draft-loading-state" class="hidden bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="spinner"></div>
+                    <h3 class="text-xl font-semibold text-white">스크립트 생성 중...</h3>
+                </div>
+                <p class="text-slate-400">AI가 스크립트를 작성하고 있습니다. 잠시만 기다려주세요.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 오디오 플레이어 (숨김) -->
+<audio id="preview-audio" class="hidden"></audio>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('generate-form');
+    const generateBtn = document.getElementById('generate-btn');
+    const initialState = document.getElementById('initial-state');
+    const progressState = document.getElementById('progress-state');
+    const completeState = document.getElementById('complete-state');
+    const errorState = document.getElementById('error-state');
+    const editState = document.getElementById('edit-state');
+    const draftLoadingState = document.getElementById('draft-loading-state');
+    const logPanel = document.getElementById('log-panel');
+    const previewAudio = document.getElementById('preview-audio');
+
+    // 현재 작업 ID
+    let currentJobId = null;
+
+    // 숏폼/롱폼 탭 전환
+    const tabShort = document.getElementById('tab-short');
+    const tabLong = document.getElementById('tab-long');
+    const shortPlatforms = document.getElementById('short-platforms');
+    const longPlatforms = document.getElementById('long-platforms');
+    const longformNotice = document.getElementById('longform-notice');
+
+    tabShort.addEventListener('click', function() {
+        tabShort.classList.remove('bg-dark-700', 'text-slate-300');
+        tabShort.classList.add('bg-primary-500', 'text-white');
+        tabLong.classList.remove('bg-primary-500', 'text-white');
+        tabLong.classList.add('bg-dark-700', 'text-slate-300');
+
+        shortPlatforms.classList.remove('hidden');
+        longPlatforms.classList.add('hidden');
+        longformNotice.classList.add('hidden');
+
+        // 숏폼 첫 번째 옵션 선택
+        document.querySelector('input[value="shorts"]').checked = true;
+    });
+
+    tabLong.addEventListener('click', function() {
+        tabLong.classList.remove('bg-dark-700', 'text-slate-300');
+        tabLong.classList.add('bg-primary-500', 'text-white');
+        tabShort.classList.remove('bg-primary-500', 'text-white');
+        tabShort.classList.add('bg-dark-700', 'text-slate-300');
+
+        longPlatforms.classList.remove('hidden');
+        shortPlatforms.classList.add('hidden');
+        longformNotice.classList.remove('hidden');
+
+        // 롱폼 첫 번째 옵션 선택
+        document.querySelector('input[value="youtube_5min"]').checked = true;
+    });
+
+    // 언어 필터
+    document.querySelectorAll('.lang-filter').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const lang = this.dataset.lang;
+
+            document.querySelectorAll('.lang-filter').forEach(b => {
+                b.classList.remove('bg-primary-500', 'text-white');
+                b.classList.add('bg-dark-700', 'text-slate-300');
+            });
+            this.classList.remove('bg-dark-700', 'text-slate-300');
+            this.classList.add('bg-primary-500', 'text-white');
+
+            document.querySelectorAll('.voice-card').forEach(card => {
+                if (!lang || card.dataset.lang === lang || card.dataset.lang.startsWith(lang)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        });
+    });
+
+    // 음성 미리듣기
+    document.querySelectorAll('.preview-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const voiceId = this.dataset.voiceId;
+            const icon = this.querySelector('svg');
+
+            icon.innerHTML = '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" class="animate-spin" stroke-dasharray="31.4 31.4" stroke-dashoffset="10"/>';
+
+            fetch(`/api/voices/preview/${voiceId}`)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    previewAudio.src = url;
+                    previewAudio.play();
+
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>';
+
+                    previewAudio.onended = () => {
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+                    };
+                })
+                .catch(err => {
+                    console.error('Preview error:', err);
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+                });
+        });
+    });
+
+    // 폼 제출
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const genMode = formData.get('gen_mode');
+
+        // 상태 전환
+        hideAllStates();
+        generateBtn.disabled = true;
+        logPanel.innerHTML = '';
+
+        // 진행 바 초기화
+        document.querySelectorAll('.step-progress').forEach(bar => {
+            bar.style.width = '0%';
+        });
+
+        if (genMode === 'step') {
+            // 단계별 진행 모드: 스크립트만 생성
+            draftLoadingState.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/generate/draft', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '스크립트 생성 실패');
+                }
+
+                const data = await response.json();
+                currentJobId = data.job_id;
+                document.getElementById('remaining-count').textContent = data.remaining;
+
+                // 편집 화면에 데이터 채우기
+                document.getElementById('edit-title').value = data.youtube_title || '';
+                document.getElementById('edit-script').value = data.script || '';
+                document.getElementById('edit-broll').value = (data.broll_prompts || []).join('\n');
+                document.getElementById('edit-description').value = data.youtube_description || '';
+
+                // 편집 화면으로 전환
+                draftLoadingState.classList.add('hidden');
+                editState.classList.remove('hidden');
+                generateBtn.disabled = false;
+
+            } catch (error) {
+                draftLoadingState.classList.add('hidden');
+                showError(error.message);
+            }
+
+        } else {
+            // 자동 완성 모드: 기존 방식대로 진행
+            progressState.classList.remove('hidden');
+
+            try {
+                // 생성 시작 요청
+                const startResponse = await fetch('/generate/start', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!startResponse.ok) {
+                    const error = await startResponse.json();
+                    throw new Error(error.error || '생성 시작 실패');
+                }
+
+                const { job_id, remaining } = await startResponse.json();
+                currentJobId = job_id;
+                document.getElementById('remaining-count').textContent = remaining;
+
+                // SSE 연결
+                connectSSE(`/generate/stream/${job_id}`);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+    });
+
+    // SSE 연결 함수
+    function connectSSE(url) {
+        const eventSource = new EventSource(url);
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+
+            if (data.error) {
+                eventSource.close();
+                showError(data.error);
+                return;
+            }
+
+            // 로그 추가
+            if (data.message) {
+                addLog(data.message);
+            }
+
+            // 진행 상황 업데이트
+            if (data.steps) {
+                data.steps.forEach(step => {
+                    const stepEl = document.querySelector(`[data-step="${step.id}"]`);
+                    if (stepEl) {
+                        const progressBar = stepEl.querySelector('.step-progress');
+                        progressBar.style.width = `${step.progress}%`;
+
+                        const icon = stepEl.querySelector('.step-icon');
+                        if (step.progress === 100) {
+                            icon.classList.add('bg-green-500/20');
+                            icon.querySelector('svg').classList.remove('text-slate-500');
+                            icon.querySelector('svg').classList.add('text-green-400');
+                        } else if (step.progress > 0) {
+                            icon.classList.add('bg-primary-500/20');
+                        }
+                    }
+                });
+            }
+
+            // 완료
+            if (data.current === 'done') {
+                eventSource.close();
+                showComplete(data, currentJobId);
+            }
+        };
+
+        eventSource.onerror = function() {
+            eventSource.close();
+            showError('연결이 끊어졌습니다.');
+        };
+    }
+
+    // 모든 상태 숨기기
+    function hideAllStates() {
+        initialState.classList.add('hidden');
+        progressState.classList.add('hidden');
+        completeState.classList.add('hidden');
+        errorState.classList.add('hidden');
+        editState.classList.add('hidden');
+        draftLoadingState.classList.add('hidden');
+    }
+
+    // 스크립트 임시 저장
+    document.getElementById('save-draft-btn').addEventListener('click', async function() {
+        if (!currentJobId) return;
+
+        const brollText = document.getElementById('edit-broll').value;
+        const brollPrompts = brollText.split('\n').filter(line => line.trim());
+
+        try {
+            const response = await fetch(`/generate/draft/${currentJobId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    script: document.getElementById('edit-script').value,
+                    broll_prompts: brollPrompts,
+                    youtube_title: document.getElementById('edit-title').value,
+                    youtube_description: document.getElementById('edit-description').value,
+                })
+            });
+
+            if (response.ok) {
+                alert('저장되었습니다.');
+            } else {
+                const error = await response.json();
+                alert(error.error || '저장 실패');
+            }
+        } catch (error) {
+            alert('저장 중 오류가 발생했습니다.');
+        }
+    });
+
+    // 이미지 생성 시작 (계속 진행)
+    document.getElementById('continue-btn').addEventListener('click', async function() {
+        if (!currentJobId) return;
+
+        // 먼저 저장
+        const brollText = document.getElementById('edit-broll').value;
+        const brollPrompts = brollText.split('\n').filter(line => line.trim());
+
+        try {
+            await fetch(`/generate/draft/${currentJobId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    script: document.getElementById('edit-script').value,
+                    broll_prompts: brollPrompts,
+                    youtube_title: document.getElementById('edit-title').value,
+                    youtube_description: document.getElementById('edit-description').value,
+                })
+            });
+
+            // 진행 시작
+            const response = await fetch(`/generate/continue/${currentJobId}`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || '진행 실패');
+            }
+
+            // 진행 화면으로 전환
+            hideAllStates();
+            progressState.classList.remove('hidden');
+            logPanel.innerHTML = '';
+
+            // 진행 바 초기화 (스크립트 단계는 완료로 표시)
+            document.querySelectorAll('.step-progress').forEach(bar => {
+                bar.style.width = '0%';
+            });
+            const scriptStep = document.querySelector('[data-step="script"]');
+            if (scriptStep) {
+                scriptStep.querySelector('.step-progress').style.width = '100%';
+                scriptStep.querySelector('.step-icon').classList.add('bg-green-500/20');
+                scriptStep.querySelector('.step-icon svg').classList.remove('text-slate-500');
+                scriptStep.querySelector('.step-icon svg').classList.add('text-green-400');
+            }
+
+            // SSE 연결
+            connectSSE(`/generate/stream-continue/${currentJobId}`);
+
+        } catch (error) {
+            showError(error.message);
+        }
+    });
+
+    function addLog(message) {
+        const time = new Date().toLocaleTimeString();
+        logPanel.innerHTML += `<div>[${time}] ${message}</div>`;
+        logPanel.scrollTop = logPanel.scrollHeight;
+    }
+
+    function showComplete(data, jobId) {
+        hideAllStates();
+        completeState.classList.remove('hidden');
+        generateBtn.disabled = false;
+
+        // 비디오 프리뷰 비율 조정 (롱폼: 16:9, 숏폼: 9:16)
+        const previewContainer = document.getElementById('video-preview-container');
+        const selectedPlatform = document.querySelector('input[name="platform"]:checked').value;
+        const isLongform = selectedPlatform.startsWith('youtube_') && selectedPlatform.includes('min');
+
+        if (isLongform) {
+            previewContainer.classList.remove('aspect-[9/16]', 'max-w-xs');
+            previewContainer.classList.add('aspect-video', 'max-w-2xl');
+        } else {
+            previewContainer.classList.remove('aspect-video', 'max-w-2xl');
+            previewContainer.classList.add('aspect-[9/16]', 'max-w-xs');
+        }
+
+        if (data.video_path) {
+            document.getElementById('video-preview').src = `/dashboard/download/${jobId}`;
+        }
+        document.getElementById('video-title').textContent = data.title || '';
+        document.getElementById('video-description').textContent = data.description || '';
+        document.getElementById('download-btn').href = `/dashboard/download/${jobId}`;
+    }
+
+    function showError(message) {
+        hideAllStates();
+        errorState.classList.remove('hidden');
+        document.getElementById('error-message').textContent = message;
+        generateBtn.disabled = false;
+    }
+
+    // 새 비디오 만들기
+    document.getElementById('new-video-btn').addEventListener('click', function() {
+        hideAllStates();
+        initialState.classList.remove('hidden');
+        form.reset();
+        currentJobId = null;
+    });
+
+    // 다시 시도
+    document.getElementById('retry-btn').addEventListener('click', function() {
+        hideAllStates();
+        initialState.classList.remove('hidden');
+        currentJobId = null;
+    });
+});
+</script>
+{% endblock %}

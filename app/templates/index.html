@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}AI 비디오 자동 생성{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-4rem)]">
+    <!-- 히어로 섹션 -->
+    <section class="relative overflow-hidden">
+        <!-- 배경 그라데이션 -->
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-dark-900 to-dark-900"></div>
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+            <div class="text-center">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+                    <span class="text-white">AI로 만드는</span>
+                    <br>
+                    <span class="bg-gradient-to-r from-primary-400 via-primary-300 to-accent bg-clip-text text-transparent">
+                        바이럴 숏폼 비디오
+                    </span>
+                </h1>
+
+                <p class="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto">
+                    토픽만 입력하면 AI가 스크립트, 이미지, 음성, 자막까지
+                    <br class="hidden sm:block">
+                    모두 자동으로 생성합니다
+                </p>
+
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="{{ url_for('auth.register') }}"
+                       class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white text-lg font-semibold rounded-xl shadow-lg shadow-primary-500/25 transition">
+                        무료로 시작하기
+                        <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </a>
+                    <a href="#features"
+                       class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 border border-dark-600 hover:border-dark-500 text-slate-300 hover:text-white rounded-xl transition">
+                        기능 살펴보기
+                    </a>
+                </div>
+
+                <p class="mt-6 text-sm text-slate-500">
+                    무료 하루 3회 생성 | 신용카드 불필요
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 기능 섹션 -->
+    <section id="features" class="py-24 bg-dark-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">모든 것이 자동으로</h2>
+                <p class="mt-4 text-lg text-slate-400">토픽 하나로 완성된 비디오가 만들어집니다</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 기능 카드 1 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-primary-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">AI 스크립트 작성</h3>
+                    <p class="text-slate-400">Gemini AI가 니치에 맞는 후킹 스크립트를 자동으로 작성합니다</p>
+                </div>
+
+                <!-- 기능 카드 2 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">AI 이미지 생성</h3>
+                    <p class="text-slate-400">스크립트에 맞는 고품질 B-Roll 이미지를 자동 생성합니다</p>
+                </div>
+
+                <!-- 기능 카드 3 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">자연스러운 음성</h3>
+                    <p class="text-slate-400">10개 언어, 25+ 음성 중 선택하여 자연스러운 나레이션을 생성합니다</p>
+                </div>
+
+                <!-- 기능 카드 4 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">자동 자막 생성</h3>
+                    <p class="text-slate-400">Whisper AI로 정확한 자막을 자동 생성하고 하이라이트합니다</p>
+                </div>
+
+                <!-- 기능 카드 5 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-pink-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">16개 니치 프로필</h3>
+                    <p class="text-slate-400">게임, 테크, 금융 등 분야별 최적화된 스크립트 스타일을 적용합니다</p>
+                </div>
+
+                <!-- 기능 카드 6 -->
+                <div class="card-hover bg-dark-800 rounded-2xl p-8 border border-dark-700">
+                    <div class="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-3">멀티 플랫폼</h3>
+                    <p class="text-slate-400">YouTube Shorts, TikTok, Instagram Reels 모두 지원합니다</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA 섹션 -->
+    <section class="py-24">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">
+                지금 바로 첫 비디오를 만들어보세요
+            </h2>
+            <p class="text-lg text-slate-400 mb-10">
+                회원가입 후 무료로 하루 3개의 비디오를 생성할 수 있습니다
+            </p>
+            <a href="{{ url_for('auth.register') }}"
+               class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white text-lg font-semibold rounded-xl shadow-lg shadow-primary-500/25 transition">
+                무료로 시작하기
+                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

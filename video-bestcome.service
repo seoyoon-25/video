@@ -1,0 +1,16 @@
+[Unit]
+Description=Video Bestcome - AI Video Generator
+After=network.target
+
+[Service]
+User=seoyoon
+Group=seoyoon
+WorkingDirectory=/var/www/video
+Environment="PATH=/var/www/video/venv/bin"
+Environment="FLASK_ENV=production"
+ExecStart=/var/www/video/venv/bin/gunicorn -c gunicorn.conf.py wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

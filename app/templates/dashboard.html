@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 헤더 -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">대시보드</h1>
+        <p class="mt-2 text-slate-400">생성 이력과 사용량을 확인하세요</p>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <!-- 오늘 사용량 -->
+        <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary-500/10 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-400">오늘 사용량</p>
+                    <p class="text-2xl font-bold text-white">{{ used_today }} / {{ daily_limit }}</p>
+                </div>
+            </div>
+            <div class="mt-4 h-2 bg-dark-700 rounded-full overflow-hidden">
+                <div class="h-full bg-primary-500 rounded-full" style="width: {{ (used_today / daily_limit * 100)|int }}%"></div>
+            </div>
+        </div>
+
+        <!-- 남은 횟수 -->
+        <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-400">남은 횟수</p>
+                    <p class="text-2xl font-bold text-white">{{ remaining }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 총 생성 수 -->
+        <div class="bg-dark-800 rounded-2xl p-6 border border-dark-700">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-400">총 생성 수</p>
+                    <p class="text-2xl font-bold text-white">{{ generations|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 빠른 액션 -->
+    <div class="mb-8">
+        <a href="{{ url_for('generate.generate_page') }}"
+           class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-xl transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            새 비디오 생성
+        </a>
+    </div>
+
+    <!-- 생성 이력 -->
+    <div class="bg-dark-800 rounded-2xl border border-dark-700">
+        <div class="p-6 border-b border-dark-700">
+            <h2 class="text-xl font-semibold text-white">생성 이력</h2>
+        </div>
+
+        {% if generations %}
+            <div class="divide-y divide-dark-700">
+                {% for gen in generations %}
+                    <div class="p-6 hover:bg-dark-700/50 transition">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <!-- 상태 뱃지 -->
+                                    {% if gen.status == 'completed' %}
+                                        <span class="px-2 py-1 text-xs font-medium bg-green-500/10 text-green-400 rounded-full">완료</span>
+                                    {% elif gen.status == 'pending' %}
+                                        <span class="px-2 py-1 text-xs font-medium bg-yellow-500/10 text-yellow-400 rounded-full">대기</span>
+                                    {% elif gen.status == 'failed' %}
+                                        <span class="px-2 py-1 text-xs font-medium bg-red-500/10 text-red-400 rounded-full">실패</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 text-xs font-medium bg-primary-500/10 text-primary-400 rounded-full">진행중</span>
+                                    {% endif %}
+
+                                    <!-- 플랫폼 -->
+                                    <span class="text-xs text-slate-500">{{ gen.platform|upper }}</span>
+                                </div>
+
+                                <h3 class="text-white font-medium truncate">{{ gen.topic }}</h3>
+
+                                <div class="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                                    <span>{{ gen.niche }}</span>
+                                    <span>{{ gen.created_at }}</span>
+                                </div>
+                            </div>
+
+                            <!-- 액션 버튼 -->
+                            {% if gen.status == 'completed' and gen.video_path %}
+                                <a href="{{ url_for('dashboard.download_video', job_id=gen.job_id) }}"
+                                   class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    다운로드
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-12 text-center">
+                <div class="w-16 h-16 bg-dark-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-white mb-2">아직 생성된 비디오가 없습니다</h3>
+                <p class="text-slate-400 mb-6">첫 번째 AI 비디오를 만들어보세요!</p>
+                <a href="{{ url_for('generate.generate_page') }}"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-xl transition">
+                    비디오 생성하기
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

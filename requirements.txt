@@ -8,3 +8,9 @@ google-auth-oauthlib>=1.1.0,<2.0
 openai-whisper>=20231117
 PyYAML>=6.0,<7.0
 edge-tts>=6.1.0,<7.0
+
+# Flask 웹앱
+Flask>=3.0.0,<4.0
+bcrypt>=4.1.0,<5.0
+APScheduler>=3.10.0,<4.0
+gunicorn>=21.0.0,<23.0
