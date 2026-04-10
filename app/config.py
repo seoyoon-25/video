@@ -1,6 +1,7 @@
 """Flask 환경설정 — dev/prod 분리."""
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,6 +18,7 @@ class Config:
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
     # 일일 생성 제한
     FREE_DAILY_LIMIT = 3
@@ -35,13 +37,21 @@ class DevelopmentConfig(Config):
     """개발 환경."""
     DEBUG = True
     SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
 
 
 class ProductionConfig(Config):
     """프로덕션 환경."""
     DEBUG = False
     SESSION_COOKIE_SECURE = True
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "video-bestcome-prod-secret-key-2026"
+    SESSION_COOKIE_SAMESITE = "Strict"
+
+    @property
+    def SECRET_KEY(self):
+        key = os.environ.get("SECRET_KEY")
+        if not key:
+            raise RuntimeError("프로덕션 환경에서는 SECRET_KEY 환경변수가 필수입니다.")
+        return key
 
 
 config = {

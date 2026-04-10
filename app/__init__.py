@@ -1,6 +1,8 @@
 """Flask App Factory — 비디오 생성 웹앱."""
 
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask
 
 from .config import config
@@ -13,6 +15,21 @@ def create_app(config_name: str = None) -> Flask:
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config.get(config_name, config["default"]))
+
+    # CSRF 보호 초기화
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
+
+    # Rate Limiting 초기화
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(
+        key_func=get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",
+    )
+    app.limiter = limiter
 
     # instance 폴더 생성
     try:
@@ -59,5 +76,38 @@ def create_app(config_name: str = None) -> Flask:
     def inject_user():
         from flask import g
         return {"current_user": g.get("user")}
+
+    # 커스텀 에러 핸들러
+    from flask import render_template
+
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        return render_template("errors/500.html"), 500
+
+    @app.errorhandler(429)
+    def ratelimit_exceeded(e):
+        return {"error": "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."}, 429
+
+    # 로깅 설정 (프로덕션)
+    if not app.debug:
+        log_dir = os.path.join(app.instance_path, "logs")
+        os.makedirs(log_dir, exist_ok=True)
+
+        file_handler = RotatingFileHandler(
+            os.path.join(log_dir, "video.log"),
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=10,
+        )
+        file_handler.setFormatter(logging.Formatter(
+            "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info("Flask 앱 시작됨")
 
     return app

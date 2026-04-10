@@ -1,12 +1,14 @@
 """AJAX API 라우트."""
 
 import io
+import logging
 from flask import Blueprint, jsonify, request, g, send_file
 
 from ..auth.routes import login_required
 from ..services.voice_service import get_available_voices, generate_voice_preview
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+logger = logging.getLogger(__name__)
 
 
 @api_bp.route("/voices")
@@ -39,7 +41,8 @@ def preview_voice(voice_id: str):
             download_name=f"preview_{voice_id}.mp3",
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"음성 미리듣기 실패 voice_id={voice_id}: {e}", exc_info=True)
+        return jsonify({"error": "음성 미리듣기를 불러올 수 없습니다."}), 500
 
 
 @api_bp.route("/usage")

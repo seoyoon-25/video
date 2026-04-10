@@ -13,6 +13,12 @@ from ..services.voice_service import get_available_voices
 
 schedule_bp = Blueprint("schedule", __name__, url_prefix="/schedules")
 
+# 허용된 플랫폼 목록
+ALLOWED_PLATFORMS = {
+    "shorts", "tiktok", "reels",
+    "youtube_5min", "youtube_10min", "youtube_15min", "youtube_25min"
+}
+
 
 def get_niche_choices():
     """사용 가능한 니치 목록을 가져옵니다."""
@@ -32,6 +38,25 @@ def get_niche_choices():
             "description": profile.get("description", ""),
         })
     return choices
+
+
+def get_allowed_niches() -> set:
+    """허용된 니치 목록을 가져옵니다."""
+    from pathlib import Path
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+    from verticals.niche import list_niches
+    return set(list_niches())
+
+
+def validate_niche_platform(niche: str, platform: str) -> tuple[bool, str]:
+    """niche와 platform이 허용된 값인지 검증."""
+    allowed_niches = get_allowed_niches()
+    if niche not in allowed_niches:
+        return False, f"허용되지 않는 니치입니다: {niche}"
+    if platform not in ALLOWED_PLATFORMS:
+        return False, f"허용되지 않는 플랫폼입니다: {platform}"
+    return True, ""
 
 
 def validate_time_format(time_str: str) -> bool:
@@ -88,6 +113,11 @@ def api_create_schedule():
 
     if topic_source == "manual" and not manual_topic:
         return jsonify({"error": "수동 토픽을 입력해주세요."}), 400
+
+    # 입력값 검증
+    is_valid, error_msg = validate_niche_platform(niche, platform)
+    if not is_valid:
+        return jsonify({"error": error_msg}), 400
 
     schedule_id = create_schedule(
         user_id=g.user["id"],
@@ -148,6 +178,14 @@ def api_update_schedule(schedule_id: int):
 
     if schedule_time and not validate_time_format(schedule_time):
         return jsonify({"error": "올바른 시간 형식을 입력해주세요. (HH:MM)"}), 400
+
+    # 입력값 검증 (값이 제공된 경우에만)
+    if niche is not None or platform is not None:
+        check_niche = niche if niche is not None else schedule["niche"]
+        check_platform = platform if platform is not None else schedule["platform"]
+        is_valid, error_msg = validate_niche_platform(check_niche, check_platform)
+        if not is_valid:
+            return jsonify({"error": error_msg}), 400
 
     if enabled is not None:
         enabled = 1 if enabled in (True, 1, "1", "true") else 0

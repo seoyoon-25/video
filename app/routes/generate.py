@@ -2,12 +2,15 @@
 
 import json
 import time
+import logging
 from pathlib import Path
 
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
     flash, g, Response, stream_with_context, current_app, jsonify
 )
+
+logger = logging.getLogger(__name__)
 
 from ..auth.routes import login_required
 from ..models import (
@@ -18,6 +21,30 @@ from ..models import (
 from ..services.voice_service import get_available_voices, get_voice_preview_text
 
 generate_bp = Blueprint("generate", __name__, url_prefix="/generate")
+
+# 허용된 플랫폼 목록
+ALLOWED_PLATFORMS = {
+    "shorts", "tiktok", "reels",
+    "youtube_5min", "youtube_10min", "youtube_15min", "youtube_25min"
+}
+
+
+def get_allowed_niches() -> set:
+    """허용된 니치 목록을 가져옵니다."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+    from verticals.niche import list_niches
+    return set(list_niches())
+
+
+def validate_niche_platform(niche: str, platform: str) -> tuple[bool, str]:
+    """niche와 platform이 허용된 값인지 검증."""
+    allowed_niches = get_allowed_niches()
+    if niche not in allowed_niches:
+        return False, f"허용되지 않는 니치입니다: {niche}"
+    if platform not in ALLOWED_PLATFORMS:
+        return False, f"허용되지 않는 플랫폼입니다: {platform}"
+    return True, ""
 
 
 def get_niche_choices():
@@ -79,6 +106,11 @@ def start_generation():
     if not topic:
         return {"error": "토픽을 입력해주세요."}, 400
 
+    # 입력값 검증
+    is_valid, error_msg = validate_niche_platform(niche, platform)
+    if not is_valid:
+        return {"error": error_msg}, 400
+
     job_id = str(int(time.time() * 1000))
 
     create_generation(
@@ -95,6 +127,32 @@ def start_generation():
     return {"job_id": job_id, "remaining": remaining - 1}
 
 
+def send_heartbeat():
+    """SSE 하트비트 전송 (연결 유지용)."""
+    return ": heartbeat\n\n"
+
+
+def cleanup_failed_job(job_id: str):
+    """실패한 작업의 미디어 파일 정리."""
+    import shutil
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+        from verticals.config import MEDIA_DIR, DRAFTS_DIR
+
+        media_dir = MEDIA_DIR / job_id
+        if media_dir.exists():
+            shutil.rmtree(media_dir, ignore_errors=True)
+            logger.info(f"정리됨: media/{job_id}")
+
+        draft_file = DRAFTS_DIR / f"{job_id}.json"
+        if draft_file.exists():
+            draft_file.unlink()
+            logger.info(f"정리됨: drafts/{job_id}.json")
+    except Exception as e:
+        logger.warning(f"리소스 정리 실패 job_id={job_id}: {e}")
+
+
 @generate_bp.route("/stream/<job_id>")
 @login_required
 def stream_progress(job_id: str):
@@ -109,6 +167,9 @@ def stream_progress(job_id: str):
         if not gen or gen["user_id"] != g.user["id"]:
             yield f"data: {json.dumps({'error': '작업을 찾을 수 없습니다.'})}\n\n"
             return
+
+        # 초기 하트비트
+        yield send_heartbeat()
 
         topic = gen["topic"]
         niche = gen["niche"]
@@ -160,6 +221,7 @@ def stream_progress(job_id: str):
 
             yield send_progress("script", 100, "스크립트 완료!")
 
+            yield send_heartbeat()
             yield send_progress("images", 10, "B-Roll 이미지 생성 중...")
 
             from verticals.broll import generate_broll
@@ -178,6 +240,7 @@ def stream_progress(job_id: str):
             generate_broll(broll_prompts, media_dir, profile)
             yield send_progress("images", 100, "이미지 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("voice", 10, "음성 생성 중...")
 
             from verticals.tts import generate_voiceover
@@ -198,6 +261,7 @@ def stream_progress(job_id: str):
 
             yield send_progress("voice", 100, "음성 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("captions", 10, "자막 생성 중...")
 
             from verticals.captions import generate_captions
@@ -208,6 +272,7 @@ def stream_progress(job_id: str):
 
             yield send_progress("captions", 100, "자막 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("assembly", 10, "영상 조립 중...")
 
             from verticals.assemble import assemble_video
@@ -228,8 +293,10 @@ def stream_progress(job_id: str):
             yield f"data: {json.dumps(final_data, ensure_ascii=False)}\n\n"
 
         except Exception as e:
+            logger.error(f"비디오 생성 실패 job_id={job_id}: {e}", exc_info=True)
             update_generation_status(job_id, "failed")
-            error_data = {"error": str(e)}
+            cleanup_failed_job(job_id)
+            error_data = {"error": "비디오 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}
             yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
 
     return Response(
@@ -261,6 +328,11 @@ def create_draft():
 
     if not topic:
         return jsonify({"error": "토픽을 입력해주세요."}), 400
+
+    # 입력값 검증
+    is_valid, error_msg = validate_niche_platform(niche, platform)
+    if not is_valid:
+        return jsonify({"error": error_msg}), 400
 
     job_id = str(int(time.time() * 1000))
 
@@ -315,8 +387,9 @@ def create_draft():
         })
 
     except Exception as e:
+        logger.error(f"스크립트 생성 실패 job_id={job_id}: {e}", exc_info=True)
         update_generation_status(job_id, "failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "스크립트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}), 500
 
 
 @generate_bp.route("/draft/<job_id>", methods=["GET"])
@@ -455,6 +528,7 @@ def stream_continue(job_id: str):
             return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
         try:
+            yield send_heartbeat()
             yield send_progress("images", 10, "B-Roll 이미지 생성 중...")
 
             from verticals.broll import generate_broll
@@ -474,6 +548,7 @@ def stream_continue(job_id: str):
             generate_broll(broll_prompts, media_dir, profile)
             yield send_progress("images", 100, "이미지 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("voice", 10, "음성 생성 중...")
 
             from verticals.tts import generate_voiceover
@@ -494,6 +569,7 @@ def stream_continue(job_id: str):
 
             yield send_progress("voice", 100, "음성 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("captions", 10, "자막 생성 중...")
 
             from verticals.captions import generate_captions
@@ -504,6 +580,7 @@ def stream_continue(job_id: str):
 
             yield send_progress("captions", 100, "자막 생성 완료!")
 
+            yield send_heartbeat()
             yield send_progress("assembly", 10, "영상 조립 중...")
 
             from verticals.assemble import assemble_video
@@ -525,8 +602,10 @@ def stream_continue(job_id: str):
             yield f"data: {json.dumps(final_data, ensure_ascii=False)}\n\n"
 
         except Exception as e:
+            logger.error(f"비디오 생성 실패 job_id={job_id}: {e}", exc_info=True)
             update_generation_status(job_id, "failed")
-            error_data = {"error": str(e)}
+            cleanup_failed_job(job_id)
+            error_data = {"error": "비디오 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}
             yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
 
     return Response(

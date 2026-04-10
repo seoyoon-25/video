@@ -1,7 +1,9 @@
 """인증 라우트 — 로그인, 회원가입, 로그아웃."""
 
+import re
 import bcrypt
 from functools import wraps
+from urllib.parse import urlparse, urljoin
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
     flash, session, g, current_app
@@ -12,6 +14,26 @@ from ..models import (
 )
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+
+def is_safe_url(target: str) -> bool:
+    """Open Redirect 방지: 내부 URL인지 검증."""
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
+
+
+def validate_password_complexity(password: str) -> tuple[bool, str]:
+    """비밀번호 복잡도 검증: 8자 이상, 영문자+숫자 필수."""
+    if len(password) < 8:
+        return False, "비밀번호는 최소 8자 이상이어야 합니다."
+    if not re.search(r"[a-zA-Z]", password):
+        return False, "비밀번호에 영문자가 포함되어야 합니다."
+    if not re.search(r"[0-9]", password):
+        return False, "비밀번호에 숫자가 포함되어야 합니다."
+    return True, ""
 
 
 def login_required(f):
@@ -42,6 +64,10 @@ def login():
         return redirect(url_for("main.index"))
 
     if request.method == "POST":
+        # Rate Limiting 적용 (5회/분)
+        limiter = current_app.limiter
+        limiter.limit("5 per minute")(lambda: None)()
+
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
@@ -66,7 +92,10 @@ def login():
         session["user_id"] = user["id"]
         session.permanent = True
 
+        # Open Redirect 방지
         next_page = request.args.get("next")
+        if next_page and not is_safe_url(next_page):
+            next_page = None
         return redirect(next_page or url_for("main.index"))
 
     return render_template("auth/login.html")
@@ -79,6 +108,10 @@ def register():
         return redirect(url_for("main.index"))
 
     if request.method == "POST":
+        # Rate Limiting 적용 (3회/분)
+        limiter = current_app.limiter
+        limiter.limit("3 per minute")(lambda: None)()
+
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         password_confirm = request.form.get("password_confirm", "")
@@ -89,8 +122,10 @@ def register():
         if not email or "@" not in email:
             errors.append("유효한 이메일 주소를 입력해주세요.")
 
-        if len(password) < 8:
-            errors.append("비밀번호는 최소 8자 이상이어야 합니다.")
+        # 비밀번호 복잡도 검증
+        is_valid, error_msg = validate_password_complexity(password)
+        if not is_valid:
+            errors.append(error_msg)
 
         if password != password_confirm:
             errors.append("비밀번호가 일치하지 않습니다.")
@@ -147,11 +182,18 @@ def google_login():
 @auth_bp.route("/google/callback")
 def google_callback():
     """Google OAuth 콜백."""
-    from .oauth import handle_google_callback
+    from .oauth import handle_google_callback, verify_oauth_state
 
     code = request.args.get("code")
+    state = request.args.get("state")
+
     if not code:
         flash("Google 인증에 실패했습니다.", "error")
+        return redirect(url_for("auth.login"))
+
+    # OAuth state 검증 (CSRF 방지)
+    if not state or not verify_oauth_state(state):
+        flash("인증 요청이 유효하지 않습니다. 다시 시도해주세요.", "error")
         return redirect(url_for("auth.login"))
 
     try:

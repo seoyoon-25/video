@@ -2,15 +2,29 @@
 
 import os
 import json
+import secrets
 from urllib.parse import urlencode
 
 import requests
-from flask import current_app, url_for
+from flask import current_app, url_for, session
 
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+
+def generate_oauth_state() -> str:
+    """CSRF 방지용 OAuth state 토큰 생성 및 세션 저장."""
+    state = secrets.token_urlsafe(32)
+    session["oauth_state"] = state
+    return state
+
+
+def verify_oauth_state(state: str) -> bool:
+    """OAuth state 토큰 검증."""
+    expected_state = session.pop("oauth_state", None)
+    return expected_state is not None and secrets.compare_digest(expected_state, state)
 
 
 def get_google_auth_url() -> str:
@@ -20,6 +34,7 @@ def get_google_auth_url() -> str:
         raise ValueError("GOOGLE_CLIENT_ID가 설정되지 않았습니다.")
 
     redirect_uri = url_for("auth.google_callback", _external=True)
+    state = generate_oauth_state()
 
     params = {
         "client_id": client_id,
@@ -28,6 +43,7 @@ def get_google_auth_url() -> str:
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "select_account",
+        "state": state,
     }
 
     return f"{GOOGLE_AUTH_URL}?{urlencode(params)}"

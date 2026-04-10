@@ -852,7 +852,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addLog(message) {
         const time = new Date().toLocaleTimeString();
-        logPanel.innerHTML += `<div>[${time}] ${message}</div>`;
+        const logEntry = document.createElement('div');
+        logEntry.textContent = `[${time}] ${message}`;
+        logPanel.appendChild(logEntry);
         logPanel.scrollTop = logPanel.scrollHeight;
     }
 

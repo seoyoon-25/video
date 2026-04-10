@@ -92,6 +92,7 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_daily_usage_date ON daily_usage(date);
         CREATE INDEX IF NOT EXISTS idx_schedules_user_id ON schedules(user_id);
         CREATE INDEX IF NOT EXISTS idx_schedules_enabled ON schedules(enabled);
+        CREATE INDEX IF NOT EXISTS idx_generations_user_created ON generations(user_id, created_at DESC);
     """)
     db.commit()
 
@@ -232,16 +233,22 @@ def get_daily_usage(user_id: int) -> int:
 
 
 def increment_daily_usage(user_id: int) -> int:
-    """오늘 사용량 증가, 새 사용량 반환."""
+    """오늘 사용량 증가, 새 사용량 반환. BEGIN IMMEDIATE로 Race Condition 방지."""
     db = get_db()
     today = date.today().isoformat()
 
-    db.execute(
-        """INSERT INTO daily_usage (user_id, date, count) VALUES (?, ?, 1)
-           ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1""",
-        (user_id, today),
-    )
-    db.commit()
+    # BEGIN IMMEDIATE로 트랜잭션 시작하여 동시 쓰기 방지
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        db.execute(
+            """INSERT INTO daily_usage (user_id, date, count) VALUES (?, ?, 1)
+               ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1""",
+            (user_id, today),
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return get_daily_usage(user_id)
 
 

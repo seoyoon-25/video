@@ -1,5 +1,6 @@
 """대시보드 라우트."""
 
+import logging
 from flask import Blueprint, render_template, g, current_app, send_file
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from ..auth.routes import login_required
 from ..models import get_user_generations, get_daily_usage, can_generate
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
+logger = logging.getLogger(__name__)
 
 
 @dashboard_bp.route("/")
@@ -46,7 +48,18 @@ def download_video(job_id: str):
     if not gen["video_path"]:
         return {"error": "비디오가 아직 생성되지 않았습니다."}, 404
 
-    video_path = Path(gen["video_path"])
+    video_path = Path(gen["video_path"]).resolve()
+
+    # Path Traversal 방지: 허용된 미디어 디렉토리 내에 있는지 확인
+    allowed_media_dir = current_app.config.get("MEDIA_DIR", Path.home() / ".verticals" / "media")
+    allowed_media_dir = Path(allowed_media_dir).resolve()
+
+    try:
+        video_path.relative_to(allowed_media_dir)
+    except ValueError:
+        logger.warning(f"Path traversal 시도 감지: user_id={g.user['id']}, path={gen['video_path']}")
+        return {"error": "비디오 파일을 찾을 수 없습니다."}, 404
+
     if not video_path.exists():
         return {"error": "비디오 파일을 찾을 수 없습니다."}, 404
 
