@@ -259,6 +259,10 @@ def can_generate(user_id: int, user_tier: str = "free") -> tuple[bool, int]:
     """생성 가능 여부와 남은 횟수 확인."""
     from flask import current_app
 
+    # 관리자는 무제한
+    if user_tier == "admin":
+        return True, 9999
+
     limit = (
         current_app.config["PREMIUM_DAILY_LIMIT"]
         if user_tier == "premium"
