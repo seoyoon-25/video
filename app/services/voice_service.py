@@ -27,9 +27,22 @@ EDGE_TTS_VOICES = [
     {"id": "ja-JP-KeitaNeural", "name": "Keita (男性)", "lang": "ja", "gender": "male", "provider": "edge"},
     {"id": "ja-JP-NanamiNeural", "name": "Nanami (女性)", "lang": "ja", "gender": "female", "provider": "edge"},
 
-    # 중국어 (간체)
-    {"id": "zh-CN-YunxiNeural", "name": "云溪 (男)", "lang": "zh", "gender": "male", "provider": "edge"},
-    {"id": "zh-CN-XiaoxiaoNeural", "name": "晓晓 (女)", "lang": "zh", "gender": "female", "provider": "edge"},
+    # 중국어 - 간체 (중국 대륙)
+    {"id": "zh-CN-YunxiNeural", "name": "云溪 (男)", "lang": "zh-CN", "gender": "male", "provider": "edge"},
+    {"id": "zh-CN-XiaoxiaoNeural", "name": "晓晓 (女)", "lang": "zh-CN", "gender": "female", "provider": "edge"},
+    {"id": "zh-CN-YunyangNeural", "name": "云扬 (男)", "lang": "zh-CN", "gender": "male", "provider": "edge"},
+    {"id": "zh-CN-YunjianNeural", "name": "云健 (男)", "lang": "zh-CN", "gender": "male", "provider": "edge"},
+    {"id": "zh-CN-XiaoyiNeural", "name": "晓伊 (女)", "lang": "zh-CN", "gender": "female", "provider": "edge"},
+
+    # 중국어 - 번체 (대만)
+    {"id": "zh-TW-YunJheNeural", "name": "雲哲 (男)", "lang": "zh-TW", "gender": "male", "provider": "edge"},
+    {"id": "zh-TW-HsiaoChenNeural", "name": "曉臻 (女)", "lang": "zh-TW", "gender": "female", "provider": "edge"},
+    {"id": "zh-TW-HsiaoYuNeural", "name": "曉雨 (女)", "lang": "zh-TW", "gender": "female", "provider": "edge"},
+
+    # 중국어 - 광동어 (홍콩)
+    {"id": "zh-HK-WanLungNeural", "name": "雲龍 (男)", "lang": "zh-HK", "gender": "male", "provider": "edge"},
+    {"id": "zh-HK-HiuGaaiNeural", "name": "曉佳 (女)", "lang": "zh-HK", "gender": "female", "provider": "edge"},
+    {"id": "zh-HK-HiuMaanNeural", "name": "曉曼 (女)", "lang": "zh-HK", "gender": "female", "provider": "edge"},
 
     # 스페인어
     {"id": "es-MX-JorgeNeural", "name": "Jorge (Hombre)", "lang": "es", "gender": "male", "provider": "edge"},
@@ -59,6 +72,9 @@ PREVIEW_TEXTS = {
     "en-GB": "Hello, I'm an AI voice. Create your video with this voice.",
     "ja": "こんにちは、私はAIの声です。この声で動画を作成してみてください。",
     "zh": "你好，我是AI语音。用这个声音来制作您的视频吧。",
+    "zh-CN": "你好，我是AI语音。用这个声音来制作您的视频吧。",
+    "zh-TW": "你好，我是AI語音。用這個聲音來製作您的影片吧。",
+    "zh-HK": "你好，我係AI語音。用呢個聲音嚟製作你嘅影片啦。",
     "es": "Hola, soy una voz de IA. Crea tu video con esta voz.",
     "fr": "Bonjour, je suis une voix IA. Créez votre vidéo avec cette voix.",
     "de": "Hallo, ich bin eine KI-Stimme. Erstellen Sie Ihr Video mit dieser Stimme.",
@@ -133,7 +149,9 @@ def get_languages() -> list[dict]:
         {"code": "en", "name": "English (US)"},
         {"code": "en-GB", "name": "English (UK)"},
         {"code": "ja", "name": "日本語"},
-        {"code": "zh", "name": "中文"},
+        {"code": "zh-CN", "name": "中文 (简体)"},
+        {"code": "zh-TW", "name": "中文 (繁體)"},
+        {"code": "zh-HK", "name": "粵語 (香港)"},
         {"code": "es", "name": "Español"},
         {"code": "fr", "name": "Français"},
         {"code": "de", "name": "Deutsch"},

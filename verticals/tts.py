@@ -29,6 +29,10 @@ EDGE_VOICES = {
     "fr": "fr-FR-HenriNeural",
     "ja": "ja-JP-KeitaNeural",
     "ko": "ko-KR-InJoonNeural",
+    "zh": "zh-CN-YunxiNeural",
+    "zh-CN": "zh-CN-YunxiNeural",
+    "zh-TW": "zh-TW-YunJheNeural",
+    "zh-HK": "zh-HK-WanLungNeural",
 }
 
 
