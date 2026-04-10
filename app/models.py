@@ -108,6 +108,8 @@ def _migrate_generations_table(db):
         db.execute("ALTER TABLE generations ADD COLUMN script_data TEXT")
     if "schedule_id" not in columns:
         db.execute("ALTER TABLE generations ADD COLUMN schedule_id INTEGER")
+    if "lang" not in columns:
+        db.execute("ALTER TABLE generations ADD COLUMN lang TEXT DEFAULT 'ko'")
     db.commit()
 
 
@@ -172,13 +174,14 @@ def create_generation(
     niche: str,
     platform: str,
     voice_id: str = "",
+    lang: str = "ko",
 ) -> int:
     """새 생성 작업 기록."""
     db = get_db()
     cursor = db.execute(
-        """INSERT INTO generations (user_id, job_id, topic, niche, platform, voice_id)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (user_id, job_id, topic, niche, platform, voice_id),
+        """INSERT INTO generations (user_id, job_id, topic, niche, platform, voice_id, lang)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, job_id, topic, niche, platform, voice_id, lang),
     )
     db.commit()
     return cursor.lastrowid

@@ -102,6 +102,7 @@ def start_generation():
     niche = request.form.get("niche", "general")
     platform = request.form.get("platform", "shorts")
     voice_id = request.form.get("voice_id", "")
+    lang = request.form.get("lang", "ko")
 
     if not topic:
         return {"error": "토픽을 입력해주세요."}, 400
@@ -110,6 +111,11 @@ def start_generation():
     is_valid, error_msg = validate_niche_platform(niche, platform)
     if not is_valid:
         return {"error": error_msg}, 400
+
+    # 언어 검증
+    allowed_langs = {"en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"}
+    if lang not in allowed_langs:
+        lang = "ko"
 
     job_id = str(int(time.time() * 1000))
 
@@ -120,6 +126,7 @@ def start_generation():
         niche=niche,
         platform=platform,
         voice_id=voice_id,
+        lang=lang,
     )
 
     increment_daily_usage(g.user["id"])
@@ -175,6 +182,7 @@ def stream_progress(job_id: str):
         niche = gen["niche"]
         platform = gen["platform"]
         voice_id = gen["voice_id"]
+        lang = gen["lang"] or "ko"
 
         steps = [
             {"id": "script", "name": "스크립트 작성", "progress": 0},
@@ -210,6 +218,7 @@ def stream_progress(job_id: str):
                 niche=niche,
                 platform=platform,
                 provider="gemini",
+                lang=lang,
             )
             draft["job_id"] = job_id
 
@@ -254,7 +263,7 @@ def stream_progress(job_id: str):
             generate_voiceover(
                 script_text,
                 media_dir,
-                lang="ko" if any('\uAC00' <= c <= '\uD7A3' for c in script_text) else "en",
+                lang=lang,
                 provider="edge",
                 voice_config=voice_config,
             )
@@ -325,6 +334,7 @@ def create_draft():
     niche = request.form.get("niche", "general")
     platform = request.form.get("platform", "shorts")
     voice_id = request.form.get("voice_id", "")
+    lang = request.form.get("lang", "ko")
 
     if not topic:
         return jsonify({"error": "토픽을 입력해주세요."}), 400
@@ -333,6 +343,11 @@ def create_draft():
     is_valid, error_msg = validate_niche_platform(niche, platform)
     if not is_valid:
         return jsonify({"error": error_msg}), 400
+
+    # 언어 검증
+    allowed_langs = {"en", "hi", "es", "pt", "de", "fr", "ja", "ko", "zh"}
+    if lang not in allowed_langs:
+        lang = "ko"
 
     job_id = str(int(time.time() * 1000))
 
@@ -344,6 +359,7 @@ def create_draft():
         niche=niche,
         platform=platform,
         voice_id=voice_id,
+        lang=lang,
     )
     update_generation_step(job_id, "draft_pending")
     increment_daily_usage(g.user["id"])
@@ -363,6 +379,7 @@ def create_draft():
             niche=niche,
             platform=platform,
             provider="gemini",
+            lang=lang,
         )
         draft["job_id"] = job_id
 
@@ -507,6 +524,7 @@ def stream_continue(job_id: str):
         draft = json.loads(script_data)
         niche = gen["niche"]
         voice_id = gen["voice_id"]
+        lang = gen["lang"] or "ko"
 
         steps = [
             {"id": "images", "name": "이미지 생성", "progress": 0},
@@ -562,7 +580,7 @@ def stream_continue(job_id: str):
             generate_voiceover(
                 script_text,
                 media_dir,
-                lang="ko" if any('\uAC00' <= c <= '\uD7A3' for c in script_text) else "en",
+                lang=lang,
                 provider="edge",
                 voice_config=voice_config,
             )
