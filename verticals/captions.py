@@ -50,7 +50,7 @@ def _whisper_word_timestamps(audio_path: Path, lang: str = "en") -> list[dict]:
     return words
 
 
-def _group_words(words: list[dict], group_size: int = 4) -> list[list[dict]]:
+def _group_words(words: list[dict], group_size: int = 3) -> list[list[dict]]:
     groups = []
     for i in range(0, len(words), group_size):
         groups.append(words[i:i + group_size])
@@ -66,7 +66,7 @@ def _format_ass_time(seconds: float) -> str:
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def _generate_ass(words: list[dict], output_path: Path, video_width: int = 1080, video_height: int = 1920, highlight_color: str = "#FFFF00", group_size: int = 4):
+def _generate_ass(words: list[dict], output_path: Path, video_width: int = 1080, video_height: int = 1920, highlight_color: str = "#FFFF00", group_size: int = 3):
     """Generate ASS subtitle file with word-by-word color highlighting.
 
     White text for inactive words, yellow for current word.
@@ -83,7 +83,7 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,3,0,2,40,40,{margin_v},1
+Style: Default,Arial,90,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,3,0,2,40,40,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -115,7 +115,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             parts = []
             for j, w in enumerate(group):
                 if j == active_idx:
-                    parts.append(f"{{\\c{ass_highlight}\\b1\\fs80}}{w['word']}{{\\r}}")
+                    parts.append(f"{{\\c{ass_highlight}\\b1\\fs100}}{w['word']}{{\\r}}")
                 else:
                     parts.append(w["word"])
 
@@ -129,7 +129,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return output_path
 
 
-def _generate_srt(words: list[dict], output_path: Path, group_size: int = 4) -> Path:
+def _generate_srt(words: list[dict], output_path: Path, group_size: int = 3) -> Path:
     """Generate standard SRT file from word timestamps."""
     groups = _group_words(words, group_size=group_size)
     lines = []
@@ -164,7 +164,7 @@ def generate_captions(
     work_dir: Path,
     lang: str = "en",
     highlight_color: str = "#FFFF00",
-    words_per_group: int = 4,
+    words_per_group: int = 3,
 ) -> dict:
     """Generate captions: ASS (for burn-in) + SRT (for YouTube upload).
 

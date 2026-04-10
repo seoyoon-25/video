@@ -91,20 +91,20 @@ def animate_frame(img_path: Path, out_path: Path, duration: float, effect: str =
 
     if effect == "zoom_in":
         vf = (
-            f"scale={int(w * 1.12)}:{int(h * 1.12)},"
-            f"zoompan=z='1.12-0.12*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+            f"scale={int(w * 1.4)}:{int(h * 1.4)},"
+            f"zoompan=z='1.4-0.4*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":d={frames}:s={w}x{h}:fps={fps}"
         )
     elif effect == "pan_right":
         vf = (
-            f"scale={int(w * 1.15)}:{int(h * 1.15)},"
-            f"zoompan=z=1.15:x='0.15*iw*on/{frames}':y='ih*0.075'"
+            f"scale={int(w * 1.4)}:{int(h * 1.4)},"
+            f"zoompan=z=1.4:x='0.4*iw*on/{frames}':y='ih*0.2'"
             f":d={frames}:s={w}x{h}:fps={fps}"
         )
     else:  # zoom_out
         vf = (
-            f"scale={int(w * 1.12)}:{int(h * 1.12)},"
-            f"zoompan=z='1.0+0.12*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+            f"scale={int(w * 1.4)}:{int(h * 1.4)},"
+            f"zoompan=z='1.0+0.4*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":d={frames}:s={w}x{h}:fps={fps}"
         )
 

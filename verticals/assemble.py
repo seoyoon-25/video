@@ -49,7 +49,8 @@ def assemble_video(
     merged_video = out_dir / "merged_video.mp4"
     run_cmd([
         "ffmpeg", "-f", "concat", "-safe", "0", "-i", str(concat_file),
-        "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+        "-b:v", "8M", "-pix_fmt", "yuv420p",
         str(merged_video), "-y", "-loglevel", "quiet",
     ])
 
@@ -87,8 +88,9 @@ def assemble_video(
 
         cmd += [
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-shortest",
+            "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+            "-b:v", "8M", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k", "-shortest",
             str(out_path), "-y", "-loglevel", "quiet",
         ]
     else:
@@ -99,8 +101,9 @@ def assemble_video(
             cmd += ["-vf", vf]
 
         cmd += [
-            "-c:v", "libx264" if vf else "copy",
-            "-c:a", "aac", "-shortest",
+            "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+            "-b:v", "8M", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k", "-shortest",
             str(out_path), "-y", "-loglevel", "quiet",
         ]
 

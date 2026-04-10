@@ -122,6 +122,26 @@ def _generate_elevenlabs(
 
 
 # ─────────────────────────────────────────────────────
+# gTTS — free Google TTS (cross-platform fallback)
+# ─────────────────────────────────────────────────────
+
+def _generate_gtts(script: str, out_dir: Path, lang: str = "en") -> Path:
+    """Google TTS fallback (free, cross-platform)."""
+    from gtts import gTTS
+
+    out_path = out_dir / f"voiceover_{lang}.mp3"
+    log(f"Generating {lang} voiceover via gTTS...")
+
+    # gTTS 언어 코드 매핑
+    gtts_lang = lang[:2] if lang[:2] in ["en", "ko", "ja", "zh", "es", "pt", "de", "fr", "hi"] else "en"
+
+    tts = gTTS(text=script, lang=gtts_lang)
+    tts.save(str(out_path))
+    log(f"gTTS voiceover saved: {out_path.name}")
+    return out_path
+
+
+# ─────────────────────────────────────────────────────
 # macOS say — last resort fallback
 # ─────────────────────────────────────────────────────
 
@@ -215,8 +235,8 @@ def generate_voiceover(
                 log("Falling back to ElevenLabs...")
                 provider = "elevenlabs"
             else:
-                log("Falling back to macOS say...")
-                return _generate_say(script, out_dir)
+                log("Falling back to gTTS...")
+                return _generate_gtts(script, out_dir, lang)
 
     if provider == "elevenlabs":
         try:
@@ -227,8 +247,11 @@ def generate_voiceover(
             )
         except Exception as e:
             log(f"ElevenLabs failed: {e}")
-            log("Falling back to macOS say...")
-            return _generate_say(script, out_dir)
+            log("Falling back to gTTS...")
+            return _generate_gtts(script, out_dir, lang)
+
+    if provider == "gtts":
+        return _generate_gtts(script, out_dir, lang)
 
     if provider == "say":
         return _generate_say(script, out_dir)

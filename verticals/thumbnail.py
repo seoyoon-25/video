@@ -52,7 +52,7 @@ def _overlay_title(image_path: Path, title: str, output_path: Path):
     draw = ImageDraw.Draw(img)
 
     # Try to find a bold font, fall back to default
-    font_size = 64
+    font_size = 90
     font = None
     for font_name in [
         "/System/Library/Fonts/Helvetica.ttc",

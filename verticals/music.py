@@ -51,7 +51,7 @@ def _get_speech_regions(audio_path: Path) -> list[tuple[float, float]]:
         return [(0.0, 60.0)]
 
 
-def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float = 0.3, vol_speech: float = 0.12, vol_gap: float = 0.25) -> str:
+def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float = 0.5, vol_speech: float = 0.12, vol_gap: float = 0.25) -> str:
     """Build ffmpeg volume filter expression for ducking during speech.
 
     During speech: volume = vol_speech (default 0.12)
