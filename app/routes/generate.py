@@ -246,7 +246,7 @@ def stream_progress(job_id: str):
                 progress = 10 + int((i + 1) / len(broll_prompts) * 80)
                 yield send_progress("images", progress, f"이미지 {i+1}/{len(broll_prompts)} 생성 중...")
 
-            generate_broll(broll_prompts, media_dir, profile)
+            generate_broll(broll_prompts, media_dir)
             yield send_progress("images", 100, "이미지 생성 완료!")
 
             yield send_heartbeat()
@@ -563,7 +563,7 @@ def stream_continue(job_id: str):
                 progress = 10 + int((i + 1) / len(broll_prompts) * 80)
                 yield send_progress("images", progress, f"이미지 {i+1}/{len(broll_prompts)} 생성 중...")
 
-            generate_broll(broll_prompts, media_dir, profile)
+            generate_broll(broll_prompts, media_dir)
             yield send_progress("images", 100, "이미지 생성 완료!")
 
             yield send_heartbeat()
